@@ -1,481 +1,586 @@
 <!doctype html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>AI Prompt Consultant Demo</title>
-  <style>
-    :root {
-      --bg: #0b0f17;
-      --panel: #121a2a;
-      --panel2: #0f1626;
-      --text: #e8eefc;
-      --muted: #a7b3d4;
-      --accent: #6ea8fe;
-      --danger: #ff6b6b;
-      --ok: #51cf66;
-      --border: rgba(255,255,255,0.08);
-      --shadow: 0 12px 30px rgba(0,0,0,0.35);
-      --radius: 14px;
-      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
-    }
-    body {
-      margin: 0;
-      font-family: var(--sans);
-      background: radial-gradient(1200px 600px at 15% 0%, #122043 0%, var(--bg) 55%);
-      color: var(--text);
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-      padding: 18px;
-    }
-    .app {
-      width: min(980px, 100%);
-      display: grid;
-      grid-template-columns: 1.35fr 0.9fr;
-      gap: 16px;
-    }
-    @media (max-width: 920px) {
-      .app { grid-template-columns: 1fr; }
-    }
-    .card {
-      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      overflow: hidden;
-    }
-    .header {
-      padding: 14px 16px;
-      background: rgba(0,0,0,0.15);
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-    }
-    .title {
-      font-weight: 700;
-      letter-spacing: 0.2px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .badge {
-      font-size: 12px;
-      padding: 4px 10px;
-      border-radius: 999px;
-      background: rgba(110,168,254,0.15);
-      border: 1px solid rgba(110,168,254,0.25);
-      color: var(--accent);
-      white-space: nowrap;
-    }
-    .status {
-      font-size: 12px;
-      color: var(--muted);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .dot {
-      width: 10px; height: 10px; border-radius: 50%;
-      background: rgba(255,255,255,0.15);
-      box-shadow: 0 0 0 4px rgba(255,255,255,0.04);
-    }
-    .dot.ok { background: var(--ok); box-shadow: 0 0 0 4px rgba(81,207,102,0.15); }
-    .dot.bad { background: var(--danger); box-shadow: 0 0 0 4px rgba(255,107,107,0.15); }
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI Prompt Consultant Demo</title>
+    <style>
+        :root {
+            --bg: #0b0f17;
+            --panel: #121a2a;
+            --panel2: #0f1626;
+            --text: #e8eefc;
+            --muted: #a7b3d4;
+            --accent: #6ea8fe;
+            --danger: #ff6b6b;
+            --ok: #51cf66;
+            --border: rgba(255, 255, 255, 0.08);
+            --shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+            --radius: 14px;
+            --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+        }
 
-    .chat {
-      display: flex;
-      flex-direction: column;
-      height: 72vh;
-      min-height: 520px;
-    }
-    .messages {
-      padding: 16px;
-      overflow: auto;
-      flex: 1;
-      background: linear-gradient(180deg, rgba(0,0,0,0.06), rgba(0,0,0,0.12));
-    }
-    .msg {
-      max-width: 85%;
-      padding: 10px 12px;
-      border-radius: 14px;
-      border: 1px solid var(--border);
-      margin-bottom: 10px;
-      line-height: 1.35;
-      font-size: 14px;
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-    .msg.user {
-      margin-left: auto;
-      background: rgba(110,168,254,0.12);
-      border-color: rgba(110,168,254,0.25);
-    }
-    .msg.ai {
-      margin-right: auto;
-      background: rgba(255,255,255,0.05);
-    }
-    .msg.small {
-      font-size: 12px;
-      color: var(--muted);
-      background: rgba(255,255,255,0.03);
-    }
+        body {
+            margin: 0;
+            font-family: var(--sans);
+            background: radial-gradient(1200px 600px at 15% 0%, #122043 0%, var(--bg) 55%);
+            color: var(--text);
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            padding: 18px;
+        }
 
-    .composer {
-      padding: 12px;
-      border-top: 1px solid var(--border);
-      background: rgba(0,0,0,0.18);
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 10px;
-    }
-    input[type="text"]{
-      width: 100%;
-      padding: 12px 12px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      outline: none;
-      background: rgba(15,22,38,0.65);
-      color: var(--text);
-      font-size: 14px;
-    }
-    button {
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,0.06);
-      color: var(--text);
-      padding: 10px 12px;
-      border-radius: 12px;
-      cursor: pointer;
-      font-weight: 600;
-      transition: transform .05s ease, background .2s ease;
-    }
-    button:hover { background: rgba(255,255,255,0.10); }
-    button:active { transform: translateY(1px); }
-    button.primary {
-      background: rgba(110,168,254,0.18);
-      border-color: rgba(110,168,254,0.35);
-      color: #dbe8ff;
-    }
-    button.primary:hover { background: rgba(110,168,254,0.24); }
-    button:disabled {
-      opacity: 0.55;
-      cursor: not-allowed;
-    }
+        .app {
+            width: min(980px, 100%);
+            display: grid;
+            grid-template-columns: 1.35fr 0.9fr;
+            gap: 16px;
+        }
 
-    .side {
-      display: grid;
-      grid-template-rows: auto 1fr;
-      height: 72vh;
-      min-height: 520px;
-    }
-    .panel {
-      padding: 14px 16px;
-      border-bottom: 1px solid var(--border);
-      background: rgba(0,0,0,0.12);
-    }
-    .kv {
-      display: grid;
-      gap: 10px;
-      padding: 16px;
-    }
-    .label {
-      font-size: 12px;
-      color: var(--muted);
-      margin-bottom: 6px;
-    }
-    textarea {
-      width: 100%;
-      min-height: 160px;
-      resize: vertical;
-      padding: 12px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      outline: none;
-      background: rgba(15,22,38,0.65);
-      color: var(--text);
-      font-family: var(--mono);
-      font-size: 12px;
-      line-height: 1.4;
-    }
-    .options {
-      display: grid;
-      gap: 10px;
-      padding: 16px;
-      border-top: 1px solid var(--border);
-      background: rgba(0,0,0,0.18);
-    }
-    .optionRow {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 8px;
-    }
-    .muted {
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.35;
-    }
-    .row {
-      display: flex; gap: 8px; flex-wrap: wrap;
-    }
-  </style>
+        @media (max-width: 920px) {
+            .app {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.03));
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .header {
+            padding: 14px 16px;
+            background: rgba(0, 0, 0, 0.15);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .title {
+            font-weight: 700;
+            letter-spacing: 0.2px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .badge {
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: rgba(110, 168, 254, 0.15);
+            border: 1px solid rgba(110, 168, 254, 0.25);
+            color: var(--accent);
+            white-space: nowrap;
+        }
+
+        .status {
+            font-size: 12px;
+            color: var(--muted);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.04);
+        }
+
+        .dot.ok {
+            background: var(--ok);
+            box-shadow: 0 0 0 4px rgba(81, 207, 102, 0.15);
+        }
+
+        .dot.bad {
+            background: var(--danger);
+            box-shadow: 0 0 0 4px rgba(255, 107, 107, 0.15);
+        }
+
+        .chat {
+            display: flex;
+            flex-direction: column;
+            height: 72vh;
+            min-height: 520px;
+        }
+
+        .messages {
+            padding: 16px;
+            overflow: auto;
+            flex: 1;
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.12));
+        }
+
+        .msg {
+            max-width: 85%;
+            padding: 10px 12px;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            margin-bottom: 10px;
+            line-height: 1.35;
+            font-size: 14px;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .msg.user {
+            margin-left: auto;
+            background: rgba(110, 168, 254, 0.12);
+            border-color: rgba(110, 168, 254, 0.25);
+        }
+
+        .msg.ai {
+            margin-right: auto;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .msg.small {
+            font-size: 12px;
+            color: var(--muted);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .composer {
+            padding: 12px;
+            border-top: 1px solid var(--border);
+            background: rgba(0, 0, 0, 0.18);
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 10px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px 12px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            outline: none;
+            background: rgba(15, 22, 38, 0.65);
+            color: var(--text);
+            font-size: 14px;
+        }
+
+        button {
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text);
+            padding: 10px 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform .05s ease, background .2s ease;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.10);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        button.primary {
+            background: rgba(110, 168, 254, 0.18);
+            border-color: rgba(110, 168, 254, 0.35);
+            color: #dbe8ff;
+        }
+
+        button.primary:hover {
+            background: rgba(110, 168, 254, 0.24);
+        }
+
+        button:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+
+        .side {
+            display: grid;
+            grid-template-rows: auto 1fr;
+            height: 72vh;
+            min-height: 520px;
+
+        }
+
+        .panel {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(0, 0, 0, 0.12);
+        }
+
+        .kv {
+            display: grid;
+            gap: 10px;
+            padding: 16px;
+        }
+
+        .label {
+            font-size: 12px;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 160px;
+            resize: vertical;
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            outline: none;
+            background: rgba(15, 22, 38, 0.65);
+            color: var(--text);
+            font-family: var(--mono);
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        /* Quick options shown inside chat */
+        .quickOptions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin: 6px 0 14px 0;
+        }
+
+        .quickOptions button {
+            padding: 8px 10px;
+            border-radius: 999px;
+            font-size: 13px;
+            background: rgba(110, 168, 254, 0.14);
+            border-color: rgba(110, 168, 254, 0.25);
+        }
+
+        .quickOptions button:hover {
+            background: rgba(110, 168, 254, 0.22);
+        }
+
+        .options {
+            display: grid;
+            gap: 10px;
+            padding: 16px;
+            border-top: 1px solid var(--border);
+            background: rgba(0, 0, 0, 0.18);
+        }
+
+        .optionRow {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 8px;
+        }
+
+        .muted {
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.35;
+        }
+
+        .row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+    </style>
 </head>
 
 <body>
-  <div class="app">
-    <!-- Left: Chat -->
-    <div class="card chat">
-      <div class="header">
-        <div class="title">
-          AI Prompt Consultant
-          <span class="badge">OpenRouter → Llama 3.3 70B</span>
-        </div>
-        <div class="status" id="status">
-          <span class="dot" id="dot"></span>
-          <span id="statusText">Checking backend…</span>
-        </div>
-      </div>
+    <div class="app">
+        <!-- Left: Chat -->
+        <div class="card chat">
+            <div class="header">
+                <div class="title">
+                    AI Prompt Consultant
+                    <span class="badge">OpenRouter → Llama 3.3 70B</span>
+                </div>
+                <div class="status" id="status">
+                    <span class="dot" id="dot"></span>
+                    <span id="statusText">Checking backend…</span>
+                </div>
+            </div>
 
-      <div class="messages" id="messages"></div>
+            <div class="messages" id="messages"></div>
 
-      <div class="composer">
-        <input id="input" type="text" placeholder="Type your idea… e.g., a samurai in jungle" />
-        <button class="primary" id="sendBtn">Send</button>
-      </div>
+            <div class="composer">
+                <input id="input" type="text" placeholder="Type your idea… e.g., a samurai in jungle" />
+                <button class="primary" id="sendBtn">Send</button>
+            </div>
+        </div>
+
+        <!-- Right: Final Prompt + Options -->
+        <div class="card side">
+            <div class="header">
+                <div class="title">Result</div>
+                <div class="row">
+                    <button id="newSessionBtn">New session</button>
+                    <button id="copyBtn">Copy prompt</button>
+                </div>
+            </div>
+
+            <div>
+                <div class="kv">
+                    <div>
+                        <div class="label">Backend URL</div>
+                        <div class="muted" id="backendUrlLabel"></div>
+                    </div>
+
+                    <div>
+                        <div class="label">Session ID</div>
+                        <div class="muted" id="sessionLabel"></div>
+                    </div>
+
+                    <div>
+                        <div class="label">Final Prompt (when complete)</div>
+                        <textarea id="finalPrompt" readonly
+                            placeholder="Final prompt will appear here when is_complete=true"></textarea>
+                    </div>
+
+                    <div>
+                        <div class="label">Last Raw JSON (debug)</div>
+                        <textarea id="rawJson" readonly placeholder="Raw JSON response will appear here"></textarea>
+                    </div>
+                </div>
+
+                <div class="options">
+                    <div class="label">Options (when incomplete)</div>
+                    <div class="optionRow" id="optionsRow">
+                        <button disabled>Option 1</button>
+                        <button disabled>Option 2</button>
+                        <button disabled>Option 3</button>
+                    </div>
+                    <div class="muted">
+                        Tip: click an option button to send it as your next message.
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- Right: Final Prompt + Options -->
-    <div class="card side">
-      <div class="header">
-        <div class="title">Result</div>
-        <div class="row">
-          <button id="newSessionBtn">New session</button>
-          <button id="copyBtn">Copy prompt</button>
-        </div>
-      </div>
+    <script>
+        // ====== CONFIG ======
+        const BACKEND_BASE = "https://awachai-test.onrender.com";
+        // Expected endpoints:
+        // GET  /health
+        // POST /api/consult  { sessionId, userMessage } -> { message, options[], is_complete, final_prompt }
 
-      <div>
-        <div class="kv">
-          <div>
-            <div class="label">Backend URL</div>
-            <div class="muted" id="backendUrlLabel"></div>
-          </div>
+        // ====== STATE ======
+        const elMessages = document.getElementById("messages");
+        const elInput = document.getElementById("input");
+        const elSendBtn = document.getElementById("sendBtn");
+        const elOptionsRow = document.getElementById("optionsRow");
+        const elFinalPrompt = document.getElementById("finalPrompt");
+        const elRawJson = document.getElementById("rawJson");
+        const elBackendUrlLabel = document.getElementById("backendUrlLabel");
+        const elSessionLabel = document.getElementById("sessionLabel");
+        const elDot = document.getElementById("dot");
+        const elStatusText = document.getElementById("statusText");
+        const elCopyBtn = document.getElementById("copyBtn");
+        const elNewSessionBtn = document.getElementById("newSessionBtn");
 
-          <div>
-            <div class="label">Session ID</div>
-            <div class="muted" id="sessionLabel"></div>
-          </div>
+        elBackendUrlLabel.textContent = BACKEND_BASE;
 
-          <div>
-            <div class="label">Final Prompt (when complete)</div>
-            <textarea id="finalPrompt" readonly placeholder="Final prompt will appear here when is_complete=true"></textarea>
-          </div>
+        function getOrCreateSessionId() {
+            const key = "prompt_consultant_session_id";
+            let v = localStorage.getItem(key);
+            if (!v) {
+                v = (crypto?.randomUUID?.() || ("sess_" + Math.random().toString(16).slice(2)));
+                localStorage.setItem(key, v);
+            }
+            return v;
+        }
 
-          <div>
-            <div class="label">Last Raw JSON (debug)</div>
-            <textarea id="rawJson" readonly placeholder="Raw JSON response will appear here"></textarea>
-          </div>
-        </div>
+        function resetSessionId() {
+            const key = "prompt_consultant_session_id";
+            const v = (crypto?.randomUUID?.() || ("sess_" + Math.random().toString(16).slice(2)));
+            localStorage.setItem(key, v);
+            return v;
+        }
 
-        <div class="options">
-          <div class="label">Options (when incomplete)</div>
-          <div class="optionRow" id="optionsRow">
-            <button disabled>Option 1</button>
-            <button disabled>Option 2</button>
-            <button disabled>Option 3</button>
-          </div>
-          <div class="muted">
-            Tip: click an option button to send it as your next message.
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+        let sessionId = getOrCreateSessionId();
+        elSessionLabel.textContent = sessionId;
 
-<script>
-  // ====== CONFIG ======
-  const BACKEND_BASE = "https://awachaitest.vercel.app";
-  // Expected endpoints:
-  // GET  /health
-  // POST /api/consult  { sessionId, userMessage } -> { message, options[], is_complete, final_prompt }
+        // ====== UI HELPERS ======
+        function addMessage(role, text, small = false) {
+            const div = document.createElement("div");
+            div.className = "msg " + (role === "user" ? "user" : "ai") + (small ? " small" : "");
+            div.textContent = text;
+            elMessages.appendChild(div);
+            elMessages.scrollTop = elMessages.scrollHeight;
+        }
 
-  // ====== STATE ======
-  const elMessages = document.getElementById("messages");
-  const elInput = document.getElementById("input");
-  const elSendBtn = document.getElementById("sendBtn");
-  const elOptionsRow = document.getElementById("optionsRow");
-  const elFinalPrompt = document.getElementById("finalPrompt");
-  const elRawJson = document.getElementById("rawJson");
-  const elBackendUrlLabel = document.getElementById("backendUrlLabel");
-  const elSessionLabel = document.getElementById("sessionLabel");
-  const elDot = document.getElementById("dot");
-  const elStatusText = document.getElementById("statusText");
-  const elCopyBtn = document.getElementById("copyBtn");
-  const elNewSessionBtn = document.getElementById("newSessionBtn");
+        function setOptions(options) {
+            const buttons = Array.from(elOptionsRow.querySelectorAll("button"));
+            for (let i = 0; i < 3; i++) {
+                const btn = buttons[i];
+                const label = options?.[i] || "";
+                btn.textContent = label || `Option ${i + 1}`;
+                btn.disabled = !label;
+                btn.onclick = label ? () => sendMessage(label, true) : null;
+            }
+        }
 
-  elBackendUrlLabel.textContent = BACKEND_BASE;
+        function setStatus(ok, text) {
+            elDot.className = "dot " + (ok ? "ok" : "bad");
+            elStatusText.textContent = text;
+        }
 
-  function getOrCreateSessionId() {
-    const key = "prompt_consultant_session_id";
-    let v = localStorage.getItem(key);
-    if (!v) {
-      v = (crypto?.randomUUID?.() || ("sess_" + Math.random().toString(16).slice(2)));
-      localStorage.setItem(key, v);
-    }
-    return v;
-  }
+        function setLoading(isLoading) {
+            elSendBtn.disabled = isLoading;
+            elSendBtn.textContent = isLoading ? "Sending…" : "Send";
+            elInput.disabled = isLoading;
+        }
 
-  function resetSessionId() {
-    const key = "prompt_consultant_session_id";
-    const v = (crypto?.randomUUID?.() || ("sess_" + Math.random().toString(16).slice(2)));
-    localStorage.setItem(key, v);
-    return v;
-  }
+        // ====== NETWORK ======
+        async function checkHealth() {
+            try {
+                const res = await fetch(BACKEND_BASE + "/health", { method: "GET" });
+                if (!res.ok) throw new Error("health not ok");
+                const json = await res.json();
+                if (json && json.ok === true) {
+                    setStatus(true, "Backend online");
+                    return true;
+                }
+                throw new Error("health payload unexpected");
+            } catch (e) {
+                setStatus(false, "Backend offline / CORS issue");
+                addMessage("ai", "Backend health check failed. Make sure CORS is enabled and /health works.", true);
+                return false;
+            }
+        }
 
-  let sessionId = getOrCreateSessionId();
-  elSessionLabel.textContent = sessionId;
+        async function consultAPI(userMessage) {
+            const res = await fetch(BACKEND_BASE + "/api/consult", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ sessionId, userMessage })
+            });
 
-  // ====== UI HELPERS ======
-  function addMessage(role, text, small=false) {
-    const div = document.createElement("div");
-    div.className = "msg " + (role === "user" ? "user" : "ai") + (small ? " small" : "");
-    div.textContent = text;
-    elMessages.appendChild(div);
-    elMessages.scrollTop = elMessages.scrollHeight;
-  }
+            // If server returns non-JSON, show readable error
+            const text = await res.text();
+            let json;
+            try { json = JSON.parse(text); }
+            catch {
+                throw new Error("Non-JSON response from backend: " + text.slice(0, 200));
+            }
+            if (!res.ok) {
+                throw new Error(json?.error || json?.message || ("HTTP " + res.status));
+            }
+            return json;
+        }
+        function addQuickOptions(options) {
+            // Remove any previous quick options UI in the chat
+            const existing = document.getElementById("quickOptions");
+            if (existing) existing.remove();
 
-  function setOptions(options) {
-    const buttons = Array.from(elOptionsRow.querySelectorAll("button"));
-    for (let i = 0; i < 3; i++) {
-      const btn = buttons[i];
-      const label = options?.[i] || "";
-      btn.textContent = label || `Option ${i+1}`;
-      btn.disabled = !label;
-      btn.onclick = label ? () => sendMessage(label, true) : null;
-    }
-  }
+            if (!Array.isArray(options) || options.length !== 3) return;
 
-  function setStatus(ok, text) {
-    elDot.className = "dot " + (ok ? "ok" : "bad");
-    elStatusText.textContent = text;
-  }
+            const wrap = document.createElement("div");
+            wrap.className = "quickOptions";
+            wrap.id = "quickOptions";
 
-  function setLoading(isLoading) {
-    elSendBtn.disabled = isLoading;
-    elSendBtn.textContent = isLoading ? "Sending…" : "Send";
-    elInput.disabled = isLoading;
-  }
+            options.forEach((opt) => {
+                const btn = document.createElement("button");
+                btn.type = "button";
+                btn.textContent = opt;
+                btn.onclick = () => sendMessage(opt, true); // send as next user message
+                wrap.appendChild(btn);
+            });
 
-  // ====== NETWORK ======
-  async function checkHealth() {
-    try {
-      const res = await fetch(BACKEND_BASE + "/health", { method: "GET" });
-      if (!res.ok) throw new Error("health not ok");
-      const json = await res.json();
-      if (json && json.ok === true) {
-        setStatus(true, "Backend online");
-        return true;
-      }
-      throw new Error("health payload unexpected");
-    } catch (e) {
-      setStatus(false, "Backend offline / CORS issue");
-      addMessage("ai", "Backend health check failed. Make sure CORS is enabled and /health works.", true);
-      return false;
-    }
-  }
+            elMessages.appendChild(wrap);
+            elMessages.scrollTop = elMessages.scrollHeight;
+        }
+        // ====== MAIN FLOW ======
+        async function sendMessage(message, fromButton = false) {
+            const trimmed = String(message || "").trim();
+            if (!trimmed) return;
 
-  async function consultAPI(userMessage) {
-    const res = await fetch(BACKEND_BASE + "/api/consult", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sessionId, userMessage })
-    });
+            if (!fromButton) addMessage("user", trimmed);
+            else addMessage("user", trimmed + " (picked option)", true);
 
-    // If server returns non-JSON, show readable error
-    const text = await res.text();
-    let json;
-    try { json = JSON.parse(text); }
-    catch {
-      throw new Error("Non-JSON response from backend: " + text.slice(0, 200));
-    }
-    if (!res.ok) {
-      throw new Error(json?.error || json?.message || ("HTTP " + res.status));
-    }
-    return json;
-  }
+            setLoading(true);
+            try {
+                const result = await consultAPI(trimmed);
 
-  // ====== MAIN FLOW ======
-  async function sendMessage(message, fromButton=false) {
-    const trimmed = String(message || "").trim();
-    if (!trimmed) return;
+                elRawJson.value = JSON.stringify(result, null, 2);
 
-    if (!fromButton) addMessage("user", trimmed);
-    else addMessage("user", trimmed + " (picked option)", true);
+                // Render assistant message
+                if (result?.message) addMessage("ai", result.message);
 
-    setLoading(true);
-    try {
-      const result = await consultAPI(trimmed);
+                // Render based on completion
+                // Always remove old quick options on each new model response
+                const oldQuick = document.getElementById("quickOptions");
+                if (oldQuick) oldQuick.remove();
 
-      elRawJson.value = JSON.stringify(result, null, 2);
+                if (result?.is_complete === true) {
+                    elFinalPrompt.value = result.final_prompt || "";
+                    setOptions([]); // optional: keep right panel disabled
+                } else {
+                    elFinalPrompt.value = ""; // clear until complete
 
-      // Render assistant message
-      if (result?.message) addMessage("ai", result.message);
+                    const opts = Array.isArray(result?.options) ? result.options : [];
 
-      // Render based on completion
-      if (result?.is_complete === true) {
-        elFinalPrompt.value = result.final_prompt || "";
-        setOptions([]); // disable options
-      } else {
-        elFinalPrompt.value = ""; // clear until complete
-        setOptions(Array.isArray(result?.options) ? result.options : []);
-      }
-    } catch (e) {
-      addMessage("ai", "Error: " + e.message);
-    } finally {
-      setLoading(false);
-      elInput.value = "";
-      elInput.focus();
-    }
-  }
+                    // Show options in the chat (main UX)
+                    addQuickOptions(opts);
 
-  // ====== EVENTS ======
-  elSendBtn.addEventListener("click", () => sendMessage(elInput.value));
-  elInput.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") sendMessage(elInput.value);
-  });
+                    // Optional: also keep right panel options (you can remove this line if you don't want it)
+                    setOptions(opts);
+                }
+            } catch (e) {
+                addMessage("ai", "Error: " + e.message);
+            } finally {
+                setLoading(false);
+                elInput.value = "";
+                elInput.focus();
+            }
+        }
 
-  elCopyBtn.addEventListener("click", async () => {
-    const text = elFinalPrompt.value.trim();
-    if (!text) {
-      addMessage("ai", "No final prompt to copy yet.", true);
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(text);
-      addMessage("ai", "Copied final prompt to clipboard.", true);
-    } catch {
-      addMessage("ai", "Clipboard blocked by browser. Select & copy manually.", true);
-    }
-  });
+        // ====== EVENTS ======
+        elSendBtn.addEventListener("click", () => sendMessage(elInput.value));
+        elInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") sendMessage(elInput.value);
+        });
 
-  elNewSessionBtn.addEventListener("click", async () => {
-    sessionId = resetSessionId();
-    elSessionLabel.textContent = sessionId;
-    elFinalPrompt.value = "";
-    elRawJson.value = "";
-    setOptions([]);
-    elMessages.innerHTML = "";
-    addMessage("ai", "New session started. Type an idea to begin.", true);
-  });
+        elCopyBtn.addEventListener("click", async () => {
+            const text = elFinalPrompt.value.trim();
+            if (!text) {
+                addMessage("ai", "No final prompt to copy yet.", true);
+                return;
+            }
+            try {
+                await navigator.clipboard.writeText(text);
+                addMessage("ai", "Copied final prompt to clipboard.", true);
+            } catch {
+                addMessage("ai", "Clipboard blocked by browser. Select & copy manually.", true);
+            }
+        });
 
-  // ====== INIT ======
-  (async function init() {
-    addMessage("ai", "Type an idea like: “a samurai in jungle”. I’ll ask 1 question at a time and show 3 buttons.", true);
-    setOptions([]);
-    await checkHealth();
-  })();
-</script>
+        elNewSessionBtn.addEventListener("click", async () => {
+            sessionId = resetSessionId();
+            elSessionLabel.textContent = sessionId;
+            elFinalPrompt.value = "";
+            elRawJson.value = "";
+            setOptions([]);
+            elMessages.innerHTML = "";
+            addMessage("ai", "New session started. Type an idea to begin.", true);
+        });
+
+        // ====== INIT ======
+        (async function init() {
+            addMessage("ai", "Type an idea like: “a samurai in jungle”. I’ll ask 1 question at a time and show 3 buttons.", true);
+            setOptions([]);
+            await checkHealth();
+        })();
+    </script>
 </body>
+
 </html>

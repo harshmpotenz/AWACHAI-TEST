@@ -69,10 +69,14 @@ Rules:
 
 Output format:
 Return a single JSON object with exactly these keys:
-message: string
-options: array of exactly 3 strings
-is_complete: boolean
-final_prompt: string
+message
+options
+is_complete
+final_prompt
+subject
+action
+style
+context
 
 Rules for fields:
 - If is_complete is false:
@@ -122,41 +126,110 @@ function safeFallbackOptionsGeneric(slotName) {
 }
 
 function enforceSchema(obj) {
-  // Ensure object has exactly required keys (we won't delete extra keys here, but you can)
-  if (!obj || typeof obj !== "object") throw new Error("Response is not an object");
 
+  if (!obj || typeof obj !== "object")
+    throw new Error("Response is not an object");
+
+  // ---- Required keys ----
   if (!("message" in obj)) throw new Error("Missing key: message");
   if (!("options" in obj)) throw new Error("Missing key: options");
   if (!("is_complete" in obj)) throw new Error("Missing key: is_complete");
   if (!("final_prompt" in obj)) throw new Error("Missing key: final_prompt");
 
-  if (typeof obj.message !== "string") throw new Error("message must be string");
-  if (!Array.isArray(obj.options)) throw new Error("options must be array");
-  if (typeof obj.is_complete !== "boolean") throw new Error("is_complete must be boolean");
-  if (typeof obj.final_prompt !== "string") throw new Error("final_prompt must be string");
+  // ---- NEW REQUIRED SLOT KEYS ----
+  if (!("subject" in obj)) obj.subject = "";
+  if (!("action" in obj)) obj.action = "";
+  if (!("style" in obj)) obj.style = "";
+  if (!("context" in obj)) obj.context = "";
 
-  // Enforce rules
+  // ---- Type checks ----
+  if (typeof obj.message !== "string")
+    throw new Error("message must be string");
+
+  if (!Array.isArray(obj.options))
+    throw new Error("options must be array");
+
+  if (typeof obj.is_complete !== "boolean")
+    throw new Error("is_complete must be boolean");
+
+  if (typeof obj.final_prompt !== "string")
+    throw new Error("final_prompt must be string");
+
+  // Force slot values to strings
+  obj.subject = String(obj.subject || "");
+  obj.action = String(obj.action || "");
+  obj.style = String(obj.style || "");
+  obj.context = String(obj.context || "");
+
+
+  // =========================
+  // INCOMPLETE PROMPT RULES
+  // =========================
   if (obj.is_complete === false) {
-    // Must have exactly 3 options; final_prompt must be empty
-    if (obj.final_prompt !== "") obj.final_prompt = "";
+
+    // final_prompt must be empty
+    obj.final_prompt = "";
+
+    // Must have exactly 3 options
     if (obj.options.length !== 3) {
-      // Fix server-side: force 3 options (generic)
-      obj.options = safeFallbackOptionsGeneric("action").slice(0, 3);
+      obj.options = safeFallbackOptionsGeneric("action").slice(0,3);
     }
-  } else {
-    // Must have options empty; final_prompt non-empty
-    obj.options = [];
-    if (!obj.final_prompt.trim()) throw new Error("final_prompt must be non-empty when complete");
-    // message should be short; we won't hard-enforce length, but can truncate
-    if (obj.message.length > 120) obj.message = obj.message.slice(0, 117) + "...";
+
   }
 
-  // IP filtering on options
-  if (obj.options && obj.options.length) {
-    const cleaned = obj.options.filter((opt) => !containsBlockedIP(opt));
-    while (cleaned.length < 3) cleaned.push(...safeFallbackOptionsGeneric("action"));
-    obj.options = cleaned.slice(0, 3);
+
+  // =========================
+  // COMPLETE PROMPT RULES
+  // =========================
+  else {
+
+    // options must be empty
+    obj.options = [];
+
+    // All slots must exist
+    if (!obj.subject.trim())
+      throw new Error("subject missing when complete");
+
+    if (!obj.action.trim())
+      throw new Error("action missing when complete");
+
+    if (!obj.style.trim())
+      throw new Error("style missing when complete");
+
+    if (!obj.context.trim())
+      throw new Error("context missing when complete");
+
+
+    // 🔥 Force correct prompt format
+    obj.final_prompt =
+      obj.subject.trim() + " " +
+      obj.action.trim() + ", " +
+      obj.style.trim() + ", " +
+      obj.context.trim();
+
+
+    // Keep message short
+    if (obj.message.length > 120)
+      obj.message = obj.message.slice(0,117) + "...";
+
   }
+
+
+  // =========================
+  // BLOCKED WORD FILTER
+  // =========================
+  if (obj.options && obj.options.length) {
+
+    const cleaned = obj.options.filter(
+      (opt)=>!containsBlockedIP(opt)
+    );
+
+    while(cleaned.length < 3)
+      cleaned.push(...safeFallbackOptionsGeneric("action"));
+
+    obj.options = cleaned.slice(0,3);
+  }
+
 
   return obj;
 }
