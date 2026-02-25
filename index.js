@@ -12,7 +12,7 @@ const PORT = process.env.PORT || 8080;
 
 // ---- OpenRouter config ----
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
-const OPENROUTER_SITE_URL = process.env.OPENROUTER_SITE_URL || "https://awachaitest.vercel.app";
+const OPENROUTER_SITE_URL = process.env.OPENROUTER_SITE_URL || "https://awachai-test.onrender.com";
 const OPENROUTER_APP_NAME = process.env.OPENROUTER_APP_NAME || "TEST HELPER";
 
 if (!OPENROUTER_API_KEY) {
